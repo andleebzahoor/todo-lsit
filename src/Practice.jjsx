@@ -1,0 +1,157 @@
+import { useState, useEffect ,useRef } from "react";
+
+const Homepage = () => {
+  const [inputs, setInputs] = useState({ todo: "", showfinished: false });
+  const [todos, setTodos] = useState([]); //make todos as a object
+  const [editIndex,setEditIndex]=useState(null)
+  const inputRef=useRef(null)  
+
+
+  // Load todos from localStorage on first render
+  useEffect(() => {
+    
+    const storedTodos = localStorage.getItem("todos");
+     const parsed = storedTodos && storedTodos !== "undefined" ? JSON.parse(storedTodos) : [];
+     setTodos(parsed);
+  }, []);
+   useEffect(()=>{
+    if(editIndex !== null){
+      inputRef.current.focus()
+
+      
+
+    }
+
+   },[editIndex])
+   // updated inputs
+  function handleChange(e) {
+
+    const {name ,type , checked ,value} = e.target;
+    
+    
+    setInputs((prev) => ({ ...prev,[name] :type === "checkbox"? checked : value }));
+  
+  }
+
+  function savetolocalStorage(e) {
+    e.preventDefault(); // prevent page reload
+    let updatedTodos;
+    if (!inputs.todo.trim()) return; // avoid empty todos
+    
+    if(editIndex !== null){
+      updatedTodos = [...todos]
+      updatedTodos[editIndex].text=inputs.todo
+    
+    
+      setEditIndex(null) //exit editIndex
+    }
+   else{
+    const updatedTodos = [...todos, {text:inputs.todo ,completed:false}];
+  }
+    //this will update todos and localstorage 
+    
+     setTodos(updatedTodos);
+    localStorage.setItem("todos", JSON.stringify(updatedTodos));
+   
+    setInputs((prev) => ({ ...prev, todo: "" }));
+    
+  }
+  function handleDelete(index) {
+  // Step 1: Get all todos from localStorage
+  const storedTodos = JSON.parse(localStorage.getItem("todos")) || [];
+
+  // Step 2: Remove the one at 'index'
+  const updatedTodos =storedTodos.filter((_, i) => i !== index);
+
+  // Step 3: Save the new list back to localStorage
+  localStorage.setItem("todos", JSON.stringify(updatedTodos));
+
+  // Step 4: Update React state to re-render the UI
+  setTodos(updatedTodos);
+}
+function handleEdit(index){
+  setInputs((prev)=>({...prev,  todo : todos[index].text}))
+  setEditIndex(index)
+
+
+
+}
+function handletoggleComplete(index){
+  const updatedTodos = [...todos]
+  updatedTodos[index].completed= !updatedTodos.completed
+  setTodos(updatedTodos)
+  localStorage.setItem("todos" ,JSON.stringify(updatedTodos))
+
+}
+//filter todos based on "show finished"
+const displayedTodos= todos.filter((todo)=>
+  inputs.showfinished || !todo.completed
+)
+ 
+  return (
+    <div className="todo md:w-1/2 mx-3 h-auto mt-5 shadow-2xl rounded-md md:m-auto font-sans">
+      <h1 className="text-pink-950 text-center font-semibold">
+        iTask - Manage your todos at one Place
+      </h1>
+      <h2 className="text-pink-900 ml-5 font-bold">{editIndex !== null ? "Edit Todo" : "Add a Todo"}</h2>
+
+      <form>
+        <input
+          type="text"
+          name="todo"
+          value={inputs.todo}
+          onChange={handleChange}
+          ref={inputRef}
+          className="w-[70%] rounded-md m-5 border border-black outline-none focus:ring-0"
+        />
+        <button
+          type="submit"
+          onClick={savetolocalStorage}
+          className="text-white px-3 py-1 bg-pink-900 border-none rounded-lg hover:bg-pink-700"
+        >
+          {editIndex !==null ? "Update" : "Save"}
+        </button>
+
+        <div className="mx-5">
+          <input
+            type="checkbox"
+            name="showfinished"
+            checked={inputs.showfinished}
+            onChange={handleChange}
+          />
+          <label className="px-2 text-[12px]">Show finished</label>
+        </div>
+      </form>
+
+      <hr className="w-[90%] border-t border-gray-300 m-auto my-3" />
+
+      <div className="show-todo">
+        <h2 className="text-pink-900 ml-5 font-bold">Your Todos</h2>
+        <div className="insert-todos">
+          {displayedTodos.length === 0 ? (
+            <p className="text-gray-500 ml-5">No todos yet!</p>
+          ) : (
+            displayedTodos.map((todo, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between bg-gray-100 m-3 p-2 rounded-md"
+              >
+                <div>
+                  <input type="checkbox" className="mr-2" checked={todo.completed} onChange={()=>{handletoggleComplete(index)}} />
+                  <span > {todo.text}</span>
+                 
+                </div>
+                <div className="flex gap-2 text-pink-900">
+                  <i className="fa-solid fa-pen-to-square cursor-pointer  hover:text-pink-700"onClick={()=>{handleEdit(index)}}></i>
+                  <i className="fa-solid fa-trash cursor-pointer hover:text-pink-700"onClick={ ()=>{handleDelete(index)}}></i></div>
+                </div>
+            
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Homepage
